@@ -24,9 +24,11 @@ class TransactionCubit extends Cubit<TransactionState> {
 
   Future<void> loadTransactions() async {
     try {
-      emit(TransactionLoading());
+      // Tạm thời tắt emit(TransactionLoading()) ở đây để tránh giao diện bị chớp nháy khi thêm giao dịch
       final data = await repository.getTransactions();
-      emit(TransactionLoaded(data));
+      
+      // Tạo một vùng nhớ mới cho List để ép UI rebuild
+      emit(TransactionLoaded(List.from(data))); 
     } catch (e) {
       emit(TransactionError(e.toString()));
     }

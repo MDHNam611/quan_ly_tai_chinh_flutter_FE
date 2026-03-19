@@ -54,6 +54,24 @@ class DatabaseHelper {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE categories (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL, -- 'income' hoặc 'expense'
+        icon TEXT NOT NULL,
+        color TEXT NOT NULL -- Mã màu Hex (VD: #FF0000) để vẽ biểu đồ
+      )
+    ''');
+
+    await db.insert('categories', {'id': 'cat_inc_1', 'name': 'Tiền lương', 'type': 'income', 'icon': 'payments', 'color': '#00BFA5'});
+    await db.insert('categories', {'id': 'cat_inc_2', 'name': 'Khác', 'type': 'income', 'icon': 'more_horiz', 'color': '#9E9E9E'});
+    
+    // Chi phí
+    await db.insert('categories', {'id': 'cat_exp_1', 'name': 'Đồ ăn', 'type': 'expense', 'icon': 'restaurant', 'color': '#3F51B5'});
+    await db.insert('categories', {'id': 'cat_exp_2', 'name': 'Di chuyển', 'type': 'expense', 'icon': 'directions_car', 'color': '#FFB300'});
+    await db.insert('categories', {'id': 'cat_exp_3', 'name': 'Khác', 'type': 'expense', 'icon': 'more_horiz', 'color': '#9E9E9E'});
+
     // 3. Tạo sẵn ví "Tiền mặt" mặc định ngay khi mở app lần đầu
     await db.insert('accounts', {
       'id': 'cash_1', 
@@ -62,5 +80,6 @@ class DatabaseHelper {
       'description': 'Ví mặc định',
       'icon': 'wallet'
     });
+
   }
 }

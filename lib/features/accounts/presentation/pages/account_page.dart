@@ -8,6 +8,7 @@ import '../../../transactions/presentation/state/transaction_cubit.dart'; // Imp
 import '../../../transactions/presentation/pages/transaction_page.dart'; // Import Form
 import '/features/accounts/presentation/widgets/account_forms.dart';
 
+
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
 
@@ -30,8 +31,13 @@ class AccountPage extends StatelessWidget {
                 onTap: () {
                   Navigator.pop(context);
                   showModalBottomSheet(
-                    context: context, isScrollControlled: true,
-                    builder: (ctx) => EditAccountForm(account: account),
+                    context: context, 
+                    isScrollControlled: true,
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+                    builder: (ctx) => BlocProvider.value(
+                      value: context.read<AccountCubit>(),
+                      child: AccountActionForm(account: account), // Truyền account vào là Chỉnh sửa
+                    ),
                   );
                 },
               ),
@@ -121,7 +127,16 @@ class AccountPage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.add, color: Colors.black),
             onPressed: () {
-              // TODO: Mở form thêm tài khoản
+              // MỞ FORM THÊM MỚI TÀI KHOẢN
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+                builder: (ctx) => BlocProvider.value(
+                  value: context.read<AccountCubit>(),
+                  child: const AccountActionForm(account: null), // account = null là Thêm mới
+                ),
+              );
             },
           )
         ],

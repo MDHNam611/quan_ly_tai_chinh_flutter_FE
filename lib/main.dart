@@ -5,7 +5,7 @@ import 'features/transactions/presentation/state/transaction_cubit.dart';
 import 'features/transactions/presentation/pages/main_layout.dart';
 import 'features/accounts/presentation/state/account_cubit.dart';
 import 'features/dashboard/presentation/state/dashboard_cubit.dart';
-
+import 'features/categories/presentation/state/category_cubit.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await di.init();
@@ -22,6 +22,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => di.sl<TransactionCubit>()..loadTransactions()),
         BlocProvider(create: (_) => di.sl<AccountCubit>()..loadAccounts()),
         BlocProvider(create: (_) => di.sl<DashboardCubit>()), // Khởi tạo Cubit Dashboard
+        BlocProvider(create: (_) => di.sl<CategoryCubit>()..loadCategories()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

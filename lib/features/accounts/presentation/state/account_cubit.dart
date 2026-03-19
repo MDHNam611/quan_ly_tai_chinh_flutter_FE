@@ -82,6 +82,32 @@ class AccountCubit extends Cubit<AccountState> {
       emit(AccountError(e.toString()));
     }
   }
+  // Hàm Xóa tài khoản (Kèm theo xóa giao dịch liên quan)
+  Future<void> deleteAccount(String id) async {
+    try {
+      final db = await dbHelper.database;
+      
+      // Chặn không cho xóa nếu chỉ còn 1 ví duy nhất
+      final count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM accounts')) ?? 0;
+      if (count <= 1) {
+        emit(AccountError('Không thể xóa tài khoản duy nhất của bạn.'));
+        await loadAccounts();
+        return;
+      }
+
+      await db.transaction((txn) async {
+        // Xóa tất cả giao dịch có liên quan đến ví này (cả chuyển đi và nhận về)
+        await txn.delete('transactions', where: 'accountId = ? OR toAccountId = ?', whereArgs: [id, id]);
+        
+        // Xóa ví
+        await txn.delete('accounts', where: 'id = ?', whereArgs: [id]);
+      });
+      
+      await loadAccounts();
+    } catch (e) {
+      emit(AccountError(e.toString()));
+    }
+  }
 
   // Điều chỉnh số dư ngầm (Yêu cầu 4)
   Future<void> adjustBalance(String accountId, double newBalance) async {

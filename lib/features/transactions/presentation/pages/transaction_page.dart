@@ -12,6 +12,18 @@ import 'package:do_an_quan_ly_tai_chinh/features/accounts/data/models/account_mo
 
 class TransactionPage extends StatelessWidget {
   const TransactionPage({super.key});
+  // Hàm dịch từ ID ví sang Tên ví
+  String _getAccountName(String accountId, BuildContext context) {
+    final accountState = context.read<AccountCubit>().state;
+    if (accountState is AccountLoaded) {
+      final account = accountState.accounts.firstWhere(
+        (acc) => acc.id == accountId,
+        orElse: () => AccountModel(id: '', name: 'Ví đã xóa', balance: 0, icon: 'wallet'), // Đề phòng ví bị xóa
+      );
+      return account.name;
+    }
+    return accountId;
+  }
 
   String _formatHeaderDate(DateTime date) {
     final now = DateTime.now();
@@ -112,16 +124,26 @@ class TransactionPage extends StatelessWidget {
                         children: [
                           const Icon(Icons.account_balance_wallet, size: 14, color: Colors.grey),
                           const SizedBox(width: 6),
-                          Text(
-                            tx.accountId, // Tạm thời hiển thị ID ví, sẽ thay bằng Tên ví sau
-                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          
+                          // GIẢI PHÁP 1: Bọc Expanded để text tự động co rút lại không đâm thủng màn hình
+                          Expanded(
+                            child: Text(
+                              // GIẢI PHÁP 2: Gọi hàm để hiển thị Tên ví thay vì ID dài ngoằng
+                              _getAccountName(tx.accountId, context), 
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              maxLines: 1, // Chỉ cho phép hiển thị 1 dòng
+                              overflow: TextOverflow.ellipsis, // Tự động thêm dấu "..." nếu tên quá dài
+                            ),
                           ),
                         ],
                       ),
                       if (tx.note.isNotEmpty)
+                        // Bọc thêm cho ghi chú để đề phòng ghi chú quá dài cũng làm vỡ UI
                         Text(
                           tx.note,
                           style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                     ],
                   ),

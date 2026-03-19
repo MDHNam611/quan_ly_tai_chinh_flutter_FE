@@ -7,6 +7,7 @@ import 'package:do_an_quan_ly_tai_chinh/features/transactions/domain/repositorie
 import 'package:do_an_quan_ly_tai_chinh/features/transactions/presentation/state/transaction_cubit.dart';
 import 'package:do_an_quan_ly_tai_chinh/features/accounts/presentation/state/account_cubit.dart';
 import 'package:do_an_quan_ly_tai_chinh/features/dashboard/presentation/state/dashboard_cubit.dart';
+import 'package:do_an_quan_ly_tai_chinh/features/categories/presentation/state/category_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -28,4 +29,7 @@ Future<void> init() async {
 
   // Cubit Dashboard
   sl.registerFactory<DashboardCubit>(() => DashboardCubit(dbHelper: sl()));
+
+  // Cubit Danh mục
+  sl.registerFactory<CategoryCubit>(() => CategoryCubit(dbHelper: sl()));
 }
