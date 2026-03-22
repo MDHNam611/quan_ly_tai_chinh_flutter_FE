@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+
+import 'package:do_an_quan_ly_tai_chinh/core/helpers/icon_helper.dart'; // Import bộ chuyển đổi Icon
 import '../state/account_cubit.dart';
 import '../../data/models/account_model.dart';
 import '../../../../injection_container.dart' as di; // Import GetIt
 import '../../../transactions/presentation/state/transaction_cubit.dart'; // Import Cubit giao dịch
 import '../../../transactions/presentation/pages/transaction_page.dart'; // Import Form
 import '/features/accounts/presentation/widgets/account_forms.dart';
-
+// ĐÃ THÊM: Import thư viện Custom AppBar dùng chung
+import 'package:do_an_quan_ly_tai_chinh/core/widgets/custom_app_bar.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -114,18 +117,18 @@ class AccountPage extends StatelessWidget {
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tài khoản', style: TextStyle(color: Colors.black)),
+      // ĐÃ SỬA: SỬ DỤNG CUSTOM APP BAR THAY VÌ KHỐI APPBAR CŨ
+      appBar: CustomAppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.add, color: Colors.black),
+            icon: const Icon(Icons.add, color: Colors.black87, size: 28), 
             onPressed: () {
               // MỞ FORM THÊM MỚI TÀI KHOẢN
               showModalBottomSheet(
@@ -141,6 +144,7 @@ class AccountPage extends StatelessWidget {
           )
         ],
       ),
+      
       body: BlocConsumer<AccountCubit, AccountState>(
         listener: (context, state) {
           if (state is AccountError) {
@@ -166,13 +170,17 @@ class AccountPage extends StatelessWidget {
                         color: Colors.blue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.account_balance_wallet, color: Colors.blue),
+                      child: Icon(CategoryHelper.getIcon(acc.icon ?? 'wallet'), color: Colors.blue),
                     ),
                     title: Text(acc.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: acc.description != null ? Text(acc.description!) : null,
                     trailing: Text(
                       currencyFormatter.format(acc.balance),
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
+                      style: TextStyle(
+                        fontSize: 16, 
+                        fontWeight: FontWeight.bold, 
+                        color: acc.balance < 0 ? Colors.red : Colors.green // Đổi màu đỏ nếu âm tiền
+                      ),
                     ),
                     onTap: () => _showAccountOptions(context, acc),
                   ),

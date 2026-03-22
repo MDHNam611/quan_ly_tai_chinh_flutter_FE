@@ -6,8 +6,13 @@ import 'features/transactions/presentation/pages/main_layout.dart';
 import 'features/accounts/presentation/state/account_cubit.dart';
 import 'features/dashboard/presentation/state/dashboard_cubit.dart';
 import 'features/categories/presentation/state/category_cubit.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await initializeDateFormatting('vi_VN', null);
+  
   await di.init();
   runApp(const MyApp());
 }
