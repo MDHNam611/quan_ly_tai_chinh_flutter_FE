@@ -1,45 +1,208 @@
 import 'package:flutter/material.dart';
-import 'package:do_an_quan_ly_tai_chinh/features/auth/presentation/pages/auth_page.dart'; // Sẽ báo lỗi đỏ tạm thời
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:do_an_quan_ly_tai_chinh/features/auth/presentation/pages/auth_page.dart';
+import 'package:do_an_quan_ly_tai_chinh/features/auth/presentation/state/auth_cubit.dart';
+import 'package:do_an_quan_ly_tai_chinh/features/auth/presentation/state/auth_state.dart';
+
+import 'package:do_an_quan_ly_tai_chinh/features/accounts/presentation/state/account_cubit.dart';
+import 'package:do_an_quan_ly_tai_chinh/features/categories/presentation/state/category_cubit.dart';
+import 'package:do_an_quan_ly_tai_chinh/features/transactions/presentation/state/transaction_cubit.dart';
+import 'package:do_an_quan_ly_tai_chinh/features/auth/data/services/auth_service.dart';
+import 'package:do_an_quan_ly_tai_chinh/injection_container.dart' as di;
 
 // ========================================================
-// HÀM HIỂN THỊ MENU BOTTOM SHEET KHI BẤM VÀO AVATAR
+// HÀM HIỂN THỊ MENU KHI BẤM VÀO ICON AVATAR
 // ========================================================
 class ProfileMenu {
   static void show(BuildContext context) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const CircleAvatar(backgroundColor: Color(0xFFE8EAF6), child: Icon(Icons.cloud_sync, color: Colors.blue)),
-                title: const Text('Đăng nhập / Đồng bộ', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('Sao lưu dữ liệu lên đám mây'),
-                onTap: () {
-                  Navigator.pop(ctx); // Đóng menu
-                  // Mở trang Đăng nhập
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AuthPage()));
-                },
+      builder: (ctx) => BlocBuilder<AuthCubit, AuthState>(
+        builder: (context, authState) {
+          final bool isAuth = authState is AuthAuthenticated;
+          final String userName = isAuth ? authState.userName : '';
+
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+                  const SizedBox(height: 16),
+                  
+                  if (isAuth) ...[
+                    ListTile(
+                      leading: const CircleAvatar(backgroundColor: Color(0xFFE8EAF6), child: Icon(Icons.person, color: Colors.blue)),
+                      title: Text(userName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                      subtitle: const Text('Đã kết nối với đám mây', style: TextStyle(color: Colors.green, fontSize: 12)),
+                    ),
+                    const Divider(),
+                    ListTile(
+                      leading: const CircleAvatar(backgroundColor: Color(0xFFF3E5F5), child: Icon(Icons.cloud_upload, color: Colors.teal)),
+                      title: const Text('Đồng bộ dữ liệu ngay', style: TextStyle(fontWeight: FontWeight.bold)),
+                      onTap: () async {
+                        Navigator.pop(ctx); 
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (c) => const Center(child: CircularProgressIndicator()),
+                        );
+
+                        try {
+                          final accState = context.read<AccountCubit>().state;
+                          final catState = context.read<CategoryCubit>().state;
+                          final txState = context.read<TransactionCubit>().state;
+
+                          List<Map<String, dynamic>> accountsJson = [];
+                          if (accState is AccountLoaded) {
+                            accountsJson = accState.accounts.map((e) => {
+                              'id': e.id, 'name': e.name, 'balance': e.balance,
+                              'icon': e.icon, 'description': e.description,
+                            }).toList();
+                          }
+
+                          List<Map<String, dynamic>> categoriesJson = [];
+                          if (catState is CategoryLoaded) {
+                            final allCats = [...catState.expenseCategories, ...catState.incomeCategories];
+                            categoriesJson = allCats.map((e) => {
+                              'id': e.name, 'name': e.name, 'type': e.type, 'icon': e.icon, 'color': e.color,
+                            }).toList();
+                          }
+
+                          List<Map<String, dynamic>> transactionsJson = [];
+                          if (txState is TransactionLoaded) {
+                            transactionsJson = txState.transactions.map((e) => {
+                              'offlineId': e.offlineId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                              'accountId': e.accountId, 'toAccountId': e.toAccountId,
+                              'category': e.category, 'type': e.type,
+                              'amount': e.amount, 'note': e.note, 'date': e.date,
+                            }).toList();
+                          }
+
+                          final authService = di.sl<AuthService>();
+                          final error = await authService.syncData(accountsJson, categoriesJson, transactionsJson);
+
+                          if (context.mounted) Navigator.pop(context); 
+
+                          if (error == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đồng bộ lên đám mây thành công! ☁️'), backgroundColor: Colors.green));
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
+                          }
+                        } catch (e) {
+                          if (context.mounted) Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi ngoại lệ: $e'), backgroundColor: Colors.red));
+                        }
+                      },
+                    ),
+                  ] 
+                  else ...[
+                    ListTile(
+                      leading: const CircleAvatar(backgroundColor: Color(0xFFE8EAF6), child: Icon(Icons.cloud_sync, color: Colors.blue)),
+                      title: const Text('Đăng nhập / Đồng bộ', style: TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Sao lưu dữ liệu lên đám mây'),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AuthPage()));
+                      },
+                    ),
+                  ],
+
+                  const Divider(),
+
+                  ListTile(
+                    leading: const CircleAvatar(backgroundColor: Color(0xFFFCE4EC), child: Icon(Icons.info_outline, color: Colors.pink)),
+                    title: const Text('Giới thiệu ứng dụng', style: TextStyle(fontWeight: FontWeight.bold)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPage()));
+                    },
+                  ),
+
+                  if (isAuth) ...[
+                    const Divider(),
+                    // ==============================================================
+                    // ĐÃ SỬA: NÚT ĐĂNG XUẤT (Tự động PUSH dữ liệu trước khi thoát)
+                    // ==============================================================
+                    ListTile(
+                      leading: const CircleAvatar(backgroundColor: Colors.transparent, child: Icon(Icons.logout, color: Colors.red)),
+                      title: const Text('Đăng xuất', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                      onTap: () async {
+                        Navigator.pop(ctx); // Đóng menu
+                        
+                        // 1. Hiển thị Loading để giữ chân người dùng
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (c) => const Center(child: CircularProgressIndicator()),
+                        );
+
+                        try {
+                          // 2. Gom dữ liệu y hệt như lúc Đồng bộ
+                          final accState = context.read<AccountCubit>().state;
+                          final catState = context.read<CategoryCubit>().state;
+                          final txState = context.read<TransactionCubit>().state;
+
+                          List<Map<String, dynamic>> accountsJson = [];
+                          if (accState is AccountLoaded) {
+                            accountsJson = accState.accounts.map((e) => {
+                              'id': e.id, 'name': e.name, 'balance': e.balance,
+                              'icon': e.icon, 'description': e.description,
+                            }).toList();
+                          }
+
+                          List<Map<String, dynamic>> categoriesJson = [];
+                          if (catState is CategoryLoaded) {
+                            final allCats = [...catState.expenseCategories, ...catState.incomeCategories];
+                            categoriesJson = allCats.map((e) => {
+                              'id': e.name, 'name': e.name, 'type': e.type, 'icon': e.icon, 'color': e.color,
+                            }).toList();
+                          }
+
+                          List<Map<String, dynamic>> transactionsJson = [];
+                          if (txState is TransactionLoaded) {
+                            transactionsJson = txState.transactions.map((e) => {
+                              'offlineId': e.offlineId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                              'accountId': e.accountId, 'toAccountId': e.toAccountId,
+                              'category': e.category, 'type': e.type,
+                              'amount': e.amount, 'note': e.note, 'date': e.date,
+                            }).toList();
+                          }
+
+                          // 3. Đẩy lên server
+                          final authService = di.sl<AuthService>();
+                          final error = await authService.syncData(accountsJson, categoriesJson, transactionsJson);
+
+                          if (context.mounted) Navigator.pop(context); // Tắt Loading
+
+                          // 4. KIỂM TRA: Chỉ Đăng xuất nếu đẩy thành công
+                          if (error == null) {
+                            if (context.mounted) {
+                              context.read<AuthCubit>().logout();
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã lưu dữ liệu và Đăng xuất an toàn! ✅'), backgroundColor: Colors.green));
+                            }
+                          } else {
+                            // Nếu rớt mạng hoặc lỗi server -> CHẶN Đăng xuất
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sao lưu thất bại, hủy Đăng xuất để tránh mất dữ liệu: $error'), backgroundColor: Colors.red));
+                            }
+                          }
+
+                        } catch (e) {
+                          if (context.mounted) Navigator.pop(context); // Tắt Loading
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi hệ thống, không thể Đăng xuất: $e'), backgroundColor: Colors.red));
+                        }
+                      },
+                    ),
+                  ],
+                ],
               ),
-              const Divider(),
-              ListTile(
-                leading: const CircleAvatar(backgroundColor: Color(0xFFFCE4EC), child: Icon(Icons.info_outline, color: Colors.pink)),
-                title: const Text('Giới thiệu ứng dụng', style: TextStyle(fontWeight: FontWeight.bold)),
-                onTap: () {
-                  Navigator.pop(ctx); // Đóng menu
-                  // Mở trang Giới thiệu
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPage()));
-                },
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

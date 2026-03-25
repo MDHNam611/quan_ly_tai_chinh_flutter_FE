@@ -13,9 +13,11 @@ import 'package:do_an_quan_ly_tai_chinh/features/transactions/presentation/state
 import 'package:do_an_quan_ly_tai_chinh/features/transactions/data/models/transaction_model.dart';
 import 'package:do_an_quan_ly_tai_chinh/features/dashboard/presentation/widgets/period_selection_modal.dart';
 
-// ĐÃ THÊM: Import trang Giao dịch để mở đè lên khi bấm nút
 import 'package:do_an_quan_ly_tai_chinh/features/transactions/presentation/pages/transaction_page.dart';
 import 'package:do_an_quan_ly_tai_chinh/features/transactions/presentation/widgets/transaction_search_modal.dart';
+
+// ĐÃ THÊM: Import CustomAppBar
+import 'package:do_an_quan_ly_tai_chinh/core/widgets/custom_app_bar.dart';
 
 class OverviewPage extends StatefulWidget {
   const OverviewPage({super.key});
@@ -60,7 +62,6 @@ class _OverviewPageState extends State<OverviewPage> {
     });
   }
 
-  // --- CÁC HÀM TÍNH TOÁN LOGIC (THỐNG KÊ) ---
   double _calculateTotal(List<TransactionModel> txs, String type) {
     return txs.where((t) => t.type == type).fold(0.0, (sum, item) => sum + item.amount);
   }
@@ -141,11 +142,9 @@ class _OverviewPageState extends State<OverviewPage> {
     return barGroups;
   }
 
-  // ĐÃ SỬA: Hàm hiển thị BottomSheet với chức năng điều hướng
   void _showCategoryDetails(CategoryModel category, double amount, double percentage, int txCount, double totalOfType, String typeString) {
     final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
     
-    // Động bộ UI: Nút tạo giao dịch sẽ hiện chữ "Chi phí" (Đỏ) hoặc "Thu nhập" (Xanh) tùy tab
     String actionLabel = typeString == 'expense' ? 'Chi phí' : 'Thu nhập';
     IconData actionIcon = typeString == 'expense' ? Icons.arrow_downward : Icons.arrow_upward;
     Color actionColor = typeString == 'expense' ? Colors.pink.shade300 : Colors.teal.shade400;
@@ -202,14 +201,12 @@ class _OverviewPageState extends State<OverviewPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    // YÊU CẦU 1: NÚT THÊM GIAO DỊCH
                     _buildBottomSheetButton(
                       icon: actionIcon, 
                       color: actionColor, 
                       label: actionLabel, 
                       onTap: () {
-                        Navigator.pop(ctx); // Đóng BottomSheet
-                        // Gọi form thêm giao dịch gài sẵn Danh mục
+                        Navigator.pop(ctx); 
                         showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
@@ -222,21 +219,19 @@ class _OverviewPageState extends State<OverviewPage> {
                             ],
                             child: AddTransactionForm(
                               initialType: typeString, 
-                              initialCategory: category.name // Điền sẵn danh mục
+                              initialCategory: category.name 
                             ),
                           ),
                         );
                       }
                     ),
                     
-                    // YÊU CẦU 2: NÚT MỞ TRANG GIAO DỊCH
                     _buildBottomSheetButton(
                       icon: Icons.receipt_long, 
                       color: Colors.blue.shade300, 
                       label: 'Giao dịch', 
                       onTap: () {
-                        Navigator.pop(ctx); // Đóng BottomSheet
-                        // Chuyển sang trang giao dịch với bộ lọc đã gài sẵn
+                        Navigator.pop(ctx); 
                         final filter = TransactionFilter(categories: [category.name], type: typeString);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => TransactionPage(initialFilter: filter)));
                       }
@@ -280,27 +275,14 @@ class _OverviewPageState extends State<OverviewPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA), 
       
-      appBar: AppBar(
+      // ĐÃ SỬA: SỬ DỤNG CUSTOM APP BAR TẠI ĐÂY
+      appBar: CustomAppBar(
         backgroundColor: const Color(0xFFF5F6FA),
-        elevation: 0,
-        leading: const Icon(Icons.account_circle_outlined, color: Colors.black87, size: 28),
-        title: Column(
-          children: [
-            const Text('Tất cả các tài khoản', style: TextStyle(color: Colors.black54, fontSize: 12)),
-            BlocBuilder<AccountCubit, AccountState>(
-              builder: (context, state) {
-                double totalBalance = 0;
-                if (state is AccountLoaded) {
-                  for (var acc in state.accounts) totalBalance += acc.balance;
-                }
-                return Text(currencyFormatter.format(totalBalance), style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18));
-              },
-            ),
-          ],
-        ),
-        centerTitle: true,
-        actions: [IconButton(icon: const Icon(Icons.search, color: Colors.black87), onPressed: () {})],
+        actions: [
+          IconButton(icon: const Icon(Icons.search, color: Colors.black87), onPressed: () {})
+        ],
       ),
+
       body: Column(
         children: [
           Padding(
@@ -582,7 +564,6 @@ class _OverviewPageState extends State<OverviewPage> {
                                         final count = item['count'] as int;
 
                                         return InkWell(
-                                          // ĐÃ ĐIỀU CHỈNH: GỌI HÀM VỚI ĐỦ PARAMETER
                                           onTap: () => _showCategoryDetails(cat, amount, percentage, count, typeTotal, typeString),
                                           child: Row(
                                             children: [

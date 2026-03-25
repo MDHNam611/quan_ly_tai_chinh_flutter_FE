@@ -11,9 +11,13 @@ import 'package:do_an_quan_ly_tai_chinh/features/dashboard/presentation/widgets/
 import 'package:do_an_quan_ly_tai_chinh/features/transactions/presentation/state/transaction_cubit.dart';
 import 'package:do_an_quan_ly_tai_chinh/features/transactions/data/models/transaction_model.dart';
 import 'package:do_an_quan_ly_tai_chinh/features/categories/presentation/pages/category_detail_edit_screen.dart';
-// ĐÃ THÊM: Import các file cần thiết của trang Giao dịch
 import 'package:do_an_quan_ly_tai_chinh/features/transactions/presentation/pages/transaction_page.dart';
+
+// ĐÃ THÊM: Import thư viện Custom AppBar dùng chung
+import 'package:do_an_quan_ly_tai_chinh/core/widgets/custom_app_bar.dart';
+// ĐÃ THÊM: Import thư viện chứa TransactionFilter để sửa lỗi
 import 'package:do_an_quan_ly_tai_chinh/features/transactions/presentation/widgets/transaction_search_modal.dart';
+
 
 class CategoryPage extends StatefulWidget {
   const CategoryPage({super.key});
@@ -99,7 +103,6 @@ class _CategoryPageState extends State<CategoryPage> {
     return sections;
   }
 
-  // ĐÃ THÊM: HÀM TẠO NÚT TRONG BOTTOM SHEET
   Widget _buildBottomSheetButton({required IconData icon, required Color color, required String label, required VoidCallback onTap}) {
     return Column(
       children: [
@@ -113,12 +116,11 @@ class _CategoryPageState extends State<CategoryPage> {
     );
   }
 
-  // ĐÃ THÊM: HÀM HIỂN THỊ MENU KHI NHẤN GIỮ (YÊU CẦU 3)
   void _showCategoryActionMenu(CategoryModel category, String typeString) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      backgroundColor: Colors.blue.shade700, // Giao diện xanh đen giống ảnh thiết kế
+      backgroundColor: Colors.blue.shade700, 
       builder: (ctx) {
         return SafeArea(
           child: Padding(
@@ -126,7 +128,6 @@ class _CategoryPageState extends State<CategoryPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Header: Icon + Tên + Nút X
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -146,18 +147,15 @@ class _CategoryPageState extends State<CategoryPage> {
                   ],
                 ),
                 const SizedBox(height: 32),
-                // 2 Nút Tùy chọn
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildBottomSheetButton(icon: Icons.edit, color: Colors.orange.shade300, label: 'Chỉnh sửa', onTap: () {
                       Navigator.pop(ctx);
-                      // Tới trang chỉnh sửa danh mục
                       Navigator.push(context, MaterialPageRoute(builder: (_) => CategoryDetailEditScreen(category: category)));
                     }),
                     _buildBottomSheetButton(icon: Icons.receipt_long, color: Colors.blue.shade300, label: 'Giao dịch', onTap: () {
                       Navigator.pop(ctx);
-                      // Tạo bộ lọc chứa danh mục này và mở trang Giao Dịch
                       final filter = TransactionFilter(categories: [category.name], type: typeString);
                       Navigator.push(context, MaterialPageRoute(builder: (_) => TransactionPage(initialFilter: filter)));
                     }),
@@ -179,40 +177,25 @@ class _CategoryPageState extends State<CategoryPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: _isEditMode 
-            ? IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black87), onPressed: () => setState(() => _isEditMode = false))
-            : const Icon(Icons.account_circle_outlined, color: Colors.black54, size: 28),
-        title: _isEditMode
-            ? const Text('Chỉnh sửa danh mục', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18))
-            : Column(
-                children: [
-                  const Text('Tất cả các tài khoản', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                  BlocBuilder<AccountCubit, AccountState>(
-                    builder: (context, state) {
-                      double totalBalance = 0;
-                      if (state is AccountLoaded) {
-                        for (var acc in state.accounts) totalBalance += acc.balance;
-                      }
-                      return Text(currencyFormatter.format(totalBalance), style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18));
-                    },
-                  ),
-                ],
-              ),
-        centerTitle: true,
-        actions: [
-          if (!_isEditMode)
-            IconButton(
-              icon: const Icon(Icons.edit, color: Colors.black87), 
-              onPressed: () => setState(() => _isEditMode = true),
-            )
-        ],
-      ),
+      appBar: _isEditMode 
+        ? AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black87), onPressed: () => setState(() => _isEditMode = false)),
+            title: const Text('Chỉnh sửa danh mục', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18)),
+            centerTitle: true,
+          )
+        : CustomAppBar(
+            backgroundColor: Colors.white,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.black87), 
+                onPressed: () => setState(() => _isEditMode = true),
+              )
+            ],
+          ),
       body: Column(
         children: [
-          // BỘ CHỌN KỲ
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Row(
@@ -255,7 +238,6 @@ class _CategoryPageState extends State<CategoryPage> {
           ),
           const Divider(thickness: 1, height: 1),
 
-          // TAB CHUYỂN ĐỔI THU / CHI
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -292,7 +274,6 @@ class _CategoryPageState extends State<CategoryPage> {
             ),
           ),
 
-          // NỘI DUNG CHÍNH 
           Expanded(
             child: BlocConsumer<CategoryCubit, CategoryState>(
               listener: (context, state) {
@@ -320,7 +301,6 @@ class _CategoryPageState extends State<CategoryPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Column(
                           children: [
-                            // BIỂU ĐỒ DONUT 
                             Container(
                               margin: const EdgeInsets.symmetric(vertical: 24),
                               width: 220,
@@ -350,7 +330,6 @@ class _CategoryPageState extends State<CategoryPage> {
                               ),
                             ),
 
-                            // LƯỚI DANH MỤC
                             Wrap(
                               spacing: 24, 
                               runSpacing: 24,
@@ -359,16 +338,13 @@ class _CategoryPageState extends State<CategoryPage> {
                                 final catTotal = _calculateCategoryTotal(txState.transactions, cat.name, typeString);
 
                                 return InkWell(
-                                  // ĐÃ SỬA: NHẤN GIỮ HIỆN MENU (Yêu cầu 3)
                                   onLongPress: () {
                                     if (!_isEditMode) _showCategoryActionMenu(cat, typeString);
                                   },
-                                  // ĐÃ SỬA: NHẤN BÌNH THƯỜNG (Yêu cầu 2)
                                   onTap: () {
                                     if (_isEditMode) {
                                       Navigator.push(context, MaterialPageRoute(builder: (_) => CategoryDetailEditScreen(category: cat)));
                                     } else {
-                                      // Hiện form thêm giao dịch gài sẵn Danh mục
                                       showModalBottomSheet(
                                         context: context,
                                         isScrollControlled: true,
@@ -381,7 +357,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                           ],
                                           child: AddTransactionForm(
                                             initialType: typeString, 
-                                            initialCategory: cat.name // Gài sẵn danh mục
+                                            initialCategory: cat.name 
                                           ),
                                         ),
                                       );

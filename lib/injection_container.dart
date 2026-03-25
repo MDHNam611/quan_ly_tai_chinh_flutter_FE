@@ -8,6 +8,8 @@ import 'package:do_an_quan_ly_tai_chinh/features/transactions/presentation/state
 import 'package:do_an_quan_ly_tai_chinh/features/accounts/presentation/state/account_cubit.dart';
 import 'package:do_an_quan_ly_tai_chinh/features/dashboard/presentation/state/dashboard_cubit.dart';
 import 'package:do_an_quan_ly_tai_chinh/features/categories/presentation/state/category_cubit.dart';
+import 'package:do_an_quan_ly_tai_chinh/features/auth/data/services/auth_service.dart';
+import 'package:do_an_quan_ly_tai_chinh/features/auth/presentation/state/auth_cubit.dart';
 
 final sl = GetIt.instance;
 
@@ -32,4 +34,10 @@ Future<void> init() async {
 
   // Cubit Danh mục
   sl.registerFactory<CategoryCubit>(() => CategoryCubit(dbHelper: sl()));
+
+  // Services
+  sl.registerLazySingleton(() => AuthService());
+
+  // Cubits
+  sl.registerFactory(() => AuthCubit(authService: sl()));
 }

@@ -7,6 +7,7 @@ import 'features/accounts/presentation/state/account_cubit.dart';
 import 'features/dashboard/presentation/state/dashboard_cubit.dart';
 import 'features/categories/presentation/state/category_cubit.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:do_an_quan_ly_tai_chinh/features/auth/presentation/state/auth_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +29,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => di.sl<AccountCubit>()..loadAccounts()),
         BlocProvider(create: (_) => di.sl<DashboardCubit>()), // Khởi tạo Cubit Dashboard
         BlocProvider(create: (_) => di.sl<CategoryCubit>()..loadCategories()),
+        BlocProvider(create: (_) => di.sl<AuthCubit>()..checkAuthStatus()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

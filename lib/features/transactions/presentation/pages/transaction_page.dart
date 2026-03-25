@@ -15,10 +15,11 @@ import 'package:do_an_quan_ly_tai_chinh/features/categories/data/models/category
 import 'package:do_an_quan_ly_tai_chinh/features/transactions/presentation/widgets/transaction_search_modal.dart';
 import 'package:do_an_quan_ly_tai_chinh/features/transactions/presentation/widgets/transaction_action_modal.dart';
 import 'package:do_an_quan_ly_tai_chinh/features/dashboard/presentation/widgets/period_selection_modal.dart';
+
+// ĐÃ THÊM: Import CustomAppBar dùng chung
 import 'package:do_an_quan_ly_tai_chinh/core/widgets/custom_app_bar.dart';
 
 class TransactionPage extends StatefulWidget {
-  // ĐÃ THÊM: Cho phép nhận bộ lọc cài sẵn từ trang khác truyền sang
   final TransactionFilter? initialFilter;
 
   const TransactionPage({super.key, this.initialFilter});
@@ -41,7 +42,6 @@ class _TransactionPageState extends State<TransactionPage> {
   @override
   void initState() {
     super.initState();
-    // ĐÃ THÊM: Nếu có filter truyền vào thì dùng, không thì tạo rỗng
     _currentFilter = widget.initialFilter ?? TransactionFilter();
   }
 
@@ -330,73 +330,82 @@ class _TransactionPageState extends State<TransactionPage> {
     final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
     final isArrowDisabled = _currentPeriodType == PeriodType.all || _currentPeriodType == PeriodType.custom;
 
+    // Nút TÌM KIẾM dùng chung cho cả 2 loại AppBar
+    final Widget searchButton = IconButton(
+      icon: Icon(Icons.search, color: _currentFilter.isEmpty ? Colors.black87 : Colors.blue),
+      onPressed: () async {
+        final result = await showDialog<TransactionFilter>(
+          context: context,
+          builder: (ctx) => MultiBlocProvider(
+            providers: [
+              BlocProvider.value(value: context.read<AccountCubit>()),
+              BlocProvider.value(value: context.read<CategoryCubit>()),
+            ],
+            child: TransactionSearchModal(initialFilter: _currentFilter),
+          ),
+        );
+        if (result != null) setState(() => _currentFilter = result);
+      },
+    );
+
     return Scaffold(
       backgroundColor: Colors.white,
       
+      // XỬ LÝ APPBAR PHÂN NHÁNH 3 LỚP ĐỘNG
       appBar: _isMultiSelectMode 
-      ? AppBar(
-          backgroundColor: Colors.blue.shade50,
-          leading: IconButton(icon: const Icon(Icons.close, color: Colors.black87), onPressed: _clearSelection),
-          title: Text('${_selectedTransactions.length} đã chọn', style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18)),
-          actions: [
-            IconButton(icon: const Icon(Icons.checklist, color: Colors.blue), onPressed: _toggleSelectAll),
-            IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: _showBulkDeleteConfirm),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.black87),
-              onSelected: (value) {
-                if (value == 'date') _showBulkDateModal();
-                if (value == 'account') _showBulkAccountModal();
-                if (value == 'category') _showBulkCategoryModal();
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(value: 'date', child: Text('Thay đổi ngày')),
-                const PopupMenuItem(value: 'account', child: Text('Thay đổi tài khoản')),
-                const PopupMenuItem(value: 'category', child: Text('Thay đổi danh mục')),
-              ],
-            )
-          ],
-        )
-      : AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          // ĐÃ SỬA: Hiện nút quay lại NẾU trang này được mở đè lên trang Danh mục
-          leading: Navigator.canPop(context) 
-            ? IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black87), onPressed: () => Navigator.pop(context))
-            : const Icon(Icons.account_circle_outlined, color: Colors.black54, size: 28),
-          title: Column(
-            children: [
-              const Text('Tất cả các tài khoản', style: TextStyle(color: Colors.grey, fontSize: 12)),
-              BlocBuilder<AccountCubit, AccountState>(
-                builder: (context, state) {
-                  double totalBalance = 0;
-                  if (state is AccountLoaded) {
-                    for (var acc in state.accounts) totalBalance += acc.balance;
-                  }
-                  return Text(currencyFormatter.format(totalBalance), style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18));
+        // 1. Chế độ chọn nhiều
+        ? AppBar(
+            backgroundColor: Colors.blue.shade50,
+            leading: IconButton(icon: const Icon(Icons.close, color: Colors.black87), onPressed: _clearSelection),
+            title: Text('${_selectedTransactions.length} đã chọn', style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18)),
+            actions: [
+              IconButton(icon: const Icon(Icons.checklist, color: Colors.blue), onPressed: _toggleSelectAll),
+              IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: _showBulkDeleteConfirm),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Colors.black87),
+                onSelected: (value) {
+                  if (value == 'date') _showBulkDateModal();
+                  if (value == 'account') _showBulkAccountModal();
+                  if (value == 'category') _showBulkCategoryModal();
                 },
-              ),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'date', child: Text('Thay đổi ngày')),
+                  const PopupMenuItem(value: 'account', child: Text('Thay đổi tài khoản')),
+                  const PopupMenuItem(value: 'category', child: Text('Thay đổi danh mục')),
+                ],
+              )
             ],
+          )
+        : (Navigator.canPop(context) 
+            // 2. Chế độ trang con (Mở từ Danh mục) -> Có nút Quay lại
+            ? AppBar(
+                backgroundColor: Colors.white,
+                elevation: 0,
+                leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black87), onPressed: () => Navigator.pop(context)),
+                title: Column(
+                  children: [
+                    const Text('Tất cả các tài khoản', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    BlocBuilder<AccountCubit, AccountState>(
+                      builder: (context, state) {
+                        double totalBalance = 0;
+                        if (state is AccountLoaded) {
+                          for (var acc in state.accounts) totalBalance += acc.balance;
+                        }
+                        return Text(currencyFormatter.format(totalBalance), style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18));
+                      },
+                    ),
+                  ],
+                ),
+                centerTitle: true,
+                actions: [searchButton],
+              )
+            // 3. Chế độ trang Tab chính -> CustomAppBar (Có menu Avatar)
+            : CustomAppBar(
+                backgroundColor: Colors.white,
+                actions: [searchButton],
+              )
           ),
-          centerTitle: true,
-          actions: [
-            IconButton(
-              icon: Icon(Icons.search, color: _currentFilter.isEmpty ? Colors.black87 : Colors.blue),
-              onPressed: () async {
-                final result = await showDialog<TransactionFilter>(
-                  context: context,
-                  builder: (ctx) => MultiBlocProvider(
-                    providers: [
-                      BlocProvider.value(value: context.read<AccountCubit>()),
-                      BlocProvider.value(value: context.read<CategoryCubit>()),
-                    ],
-                    child: TransactionSearchModal(initialFilter: _currentFilter),
-                  ),
-                );
-                if (result != null) setState(() => _currentFilter = result);
-              },
-            )
-          ],
-        ),
+
       body: Column(
         children: [
           if (!_isMultiSelectMode) ...[
