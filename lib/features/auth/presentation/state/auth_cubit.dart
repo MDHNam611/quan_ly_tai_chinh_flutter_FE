@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // ĐÃ THÊM: Để đọc dữ liệu lưu trong máy
+import 'package:shared_preferences/shared_preferences.dart'; // Đổi màu sắc, đọc dữ liệu lưu trong máy
 import 'package:do_an_quan_ly_tai_chinh/features/auth/data/services/auth_service.dart';
 import 'auth_state.dart';
 
@@ -13,11 +13,13 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading());
     final token = await authService.getToken();
     if (token != null) {
-      // Đọc tên người dùng từ bộ nhớ đệm
       final prefs = await SharedPreferences.getInstance();
       final userName = prefs.getString('user_name') ?? 'Người dùng';
       
-      emit(AuthAuthenticated(userName)); 
+      // 👉 ĐÃ THÊM: Đọc link ảnh từ bộ nhớ đệm
+      final photoUrl = prefs.getString('user_avatar');
+      
+      emit(AuthAuthenticated(userName, photoUrl: photoUrl)); 
     } else {
       emit(AuthUnauthenticated());
     }
@@ -28,29 +30,29 @@ class AuthCubit extends Cubit<AuthState> {
     emit(AuthLoading());
     final error = await authService.register(name, email, password);
     if (error == null) {
-      // Đăng ký thành công thì tự động gọi Đăng nhập
       await login(email, password);
     } else {
       emit(AuthError(error));
     }
   }
 
-  // ĐĂNG NHẬP
+  // ĐĂNG NHẬP (Bằng Email/Password thông thường)
   Future<void> login(String email, String password) async {
     emit(AuthLoading());
     final error = await authService.login(email, password);
     
     if (error == null) {
-      // ĐĂNG NHẬP THÀNH CÔNG: Lấy tên từ SharedPreferences (do AuthService vừa lưu vào)
       final prefs = await SharedPreferences.getInstance();
       String userName = prefs.getString('user_name') ?? '';
       
-      // LOGIC THEO YÊU CẦU: Nếu tên trống, tự động cắt lấy phần username của email (trước ký tự @)
       if (userName.trim().isEmpty) {
         userName = email.split('@')[0];
       }
 
-      emit(AuthAuthenticated(userName)); 
+      // 👉 ĐÃ THÊM: Đọc link ảnh (Dù đăng nhập thường có thể null, vẫn phải truyền vào để Reset ảnh cũ)
+      final photoUrl = prefs.getString('user_avatar');
+
+      emit(AuthAuthenticated(userName, photoUrl: photoUrl)); 
     } else {
       emit(AuthError(error));
     }
@@ -62,6 +64,7 @@ class AuthCubit extends Cubit<AuthState> {
     await authService.logout();
     emit(AuthUnauthenticated());
   }
+
   // ĐĂNG NHẬP BẰNG GOOGLE
   Future<void> loginWithGoogle() async {
     emit(AuthLoading());
@@ -70,7 +73,11 @@ class AuthCubit extends Cubit<AuthState> {
     if (error == null) {
       final prefs = await SharedPreferences.getInstance();
       final userName = prefs.getString('user_name') ?? 'Người dùng Google';
-      emit(AuthAuthenticated(userName)); 
+      
+      // 👉 ĐÃ THÊM: Đọc link ảnh do AuthService vừa lưu vào
+      final photoUrl = prefs.getString('user_avatar');
+
+      emit(AuthAuthenticated(userName, photoUrl: photoUrl)); 
     } else {
       emit(AuthError(error));
     }

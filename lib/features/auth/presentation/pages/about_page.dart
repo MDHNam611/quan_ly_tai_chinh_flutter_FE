@@ -23,6 +23,9 @@ class ProfileMenu {
         builder: (context, authState) {
           final bool isAuth = authState is AuthAuthenticated;
           final String userName = isAuth ? authState.userName : '';
+          
+          // 👉 ĐÃ THÊM: Lấy link avatar từ State (Ép kiểu an toàn)
+          final String? photoUrl = isAuth ? (authState).photoUrl : null; 
 
           return SafeArea(
             child: Padding(
@@ -35,16 +38,32 @@ class ProfileMenu {
                   
                   if (isAuth) ...[
                     ListTile(
-                      leading: const CircleAvatar(backgroundColor: Color(0xFFE8EAF6), child: Icon(Icons.person, color: Colors.blue)),
+                      // 👉 ĐÃ CẬP NHẬT: Hiện Avatar nếu có link, nếu null thì hiện icon mặc định
+                      leading: CircleAvatar(
+                        radius: 24,
+                        backgroundColor: const Color(0xFFE8EAF6),
+                        backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                        child: photoUrl == null ? const Icon(Icons.person, color: Colors.blue) : null,
+                      ),
                       title: Text(userName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                       subtitle: const Text('Đã kết nối với đám mây', style: TextStyle(color: Colors.green, fontSize: 12)),
                     ),
                     const Divider(),
+                    
+                    // =========================================================
+                    // NÚT ĐỒNG BỘ (ĐÃ FIX LỖI CONTEXT VÀ DEAD CODE)
+                    // =========================================================
                     ListTile(
                       leading: const CircleAvatar(backgroundColor: Color(0xFFF3E5F5), child: Icon(Icons.cloud_upload, color: Colors.teal)),
                       title: const Text('Đồng bộ dữ liệu ngay', style: TextStyle(fontWeight: FontWeight.bold)),
                       onTap: () async {
-                        Navigator.pop(ctx); 
+                        // 1. Lưu tham chiếu trước khi thao tác bất đồng bộ
+                        final messenger = ScaffoldMessenger.of(context);
+                        final navigator = Navigator.of(context);
+
+                        // Đóng menu BottomSheet
+                        navigator.pop(); 
+
                         showDialog(
                           context: context,
                           barrierDismissible: false,
@@ -75,7 +94,7 @@ class ProfileMenu {
                           List<Map<String, dynamic>> transactionsJson = [];
                           if (txState is TransactionLoaded) {
                             transactionsJson = txState.transactions.map((e) => {
-                              'offlineId': e.offlineId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                              'offlineId': e.offlineId,
                               'accountId': e.accountId, 'toAccountId': e.toAccountId,
                               'category': e.category, 'type': e.type,
                               'amount': e.amount, 'note': e.note, 'date': e.date,
@@ -85,16 +104,18 @@ class ProfileMenu {
                           final authService = di.sl<AuthService>();
                           final error = await authService.syncData(accountsJson, categoriesJson, transactionsJson);
 
-                          if (context.mounted) Navigator.pop(context); 
+                          // 2. Tắt màn hình Loading bằng navigator đã lưu
+                          if (navigator.canPop()) navigator.pop(); 
 
+                          // 3. Hiện thông báo bằng messenger đã lưu
                           if (error == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đồng bộ lên đám mây thành công! ☁️'), backgroundColor: Colors.green));
+                            messenger.showSnackBar(const SnackBar(content: Text('Đồng bộ lên đám mây thành công! ☁️'), backgroundColor: Colors.green));
                           } else {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
+                            messenger.showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
                           }
                         } catch (e) {
-                          if (context.mounted) Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi ngoại lệ: $e'), backgroundColor: Colors.red));
+                          if (navigator.canPop()) navigator.pop();
+                          messenger.showSnackBar(SnackBar(content: Text('Lỗi ngoại lệ: $e'), backgroundColor: Colors.red));
                         }
                       },
                     ),
@@ -125,15 +146,18 @@ class ProfileMenu {
                   if (isAuth) ...[
                     const Divider(),
                     // ==============================================================
-                    // ĐÃ SỬA: NÚT ĐĂNG XUẤT (Tự động PUSH dữ liệu trước khi thoát)
+                    // NÚT ĐĂNG XUẤT (ĐÃ FIX LỖI CONTEXT VÀ DEAD CODE)
                     // ==============================================================
                     ListTile(
                       leading: const CircleAvatar(backgroundColor: Colors.transparent, child: Icon(Icons.logout, color: Colors.red)),
                       title: const Text('Đăng xuất', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                       onTap: () async {
-                        Navigator.pop(ctx); // Đóng menu
-                        
-                        // 1. Hiển thị Loading để giữ chân người dùng
+                        final authCubit = context.read<AuthCubit>();
+                        final messenger = ScaffoldMessenger.of(context);
+                        final navigator = Navigator.of(context);
+
+                        navigator.pop(); // Đóng menu BottomSheet
+
                         showDialog(
                           context: context,
                           barrierDismissible: false,
@@ -141,7 +165,6 @@ class ProfileMenu {
                         );
 
                         try {
-                          // 2. Gom dữ liệu y hệt như lúc Đồng bộ
                           final accState = context.read<AccountCubit>().state;
                           final catState = context.read<CategoryCubit>().state;
                           final txState = context.read<TransactionCubit>().state;
@@ -165,35 +188,28 @@ class ProfileMenu {
                           List<Map<String, dynamic>> transactionsJson = [];
                           if (txState is TransactionLoaded) {
                             transactionsJson = txState.transactions.map((e) => {
-                              'offlineId': e.offlineId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                              'offlineId': e.offlineId,
                               'accountId': e.accountId, 'toAccountId': e.toAccountId,
                               'category': e.category, 'type': e.type,
                               'amount': e.amount, 'note': e.note, 'date': e.date,
                             }).toList();
                           }
 
-                          // 3. Đẩy lên server
                           final authService = di.sl<AuthService>();
                           final error = await authService.syncData(accountsJson, categoriesJson, transactionsJson);
 
-                          if (context.mounted) Navigator.pop(context); // Tắt Loading
+                          if (navigator.canPop()) navigator.pop(); // Tắt Loading
 
-                          // 4. KIỂM TRA: Chỉ Đăng xuất nếu đẩy thành công
                           if (error == null) {
-                            if (context.mounted) {
-                              context.read<AuthCubit>().logout();
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã lưu dữ liệu và Đăng xuất an toàn! ✅'), backgroundColor: Colors.green));
-                            }
+                            authCubit.logout(); // Dùng authCubit đã lưu ở ngoài
+                            messenger.showSnackBar(const SnackBar(content: Text('Đã lưu dữ liệu và Đăng xuất an toàn! ✅'), backgroundColor: Colors.green));
                           } else {
-                            // Nếu rớt mạng hoặc lỗi server -> CHẶN Đăng xuất
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sao lưu thất bại, hủy Đăng xuất để tránh mất dữ liệu: $error'), backgroundColor: Colors.red));
-                            }
+                            messenger.showSnackBar(SnackBar(content: Text('Sao lưu thất bại, hủy Đăng xuất để tránh mất dữ liệu: $error'), backgroundColor: Colors.red));
                           }
 
                         } catch (e) {
-                          if (context.mounted) Navigator.pop(context); // Tắt Loading
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi hệ thống, không thể Đăng xuất: $e'), backgroundColor: Colors.red));
+                          if (navigator.canPop()) navigator.pop();
+                          messenger.showSnackBar(SnackBar(content: Text('Lỗi hệ thống, không thể Đăng xuất: $e'), backgroundColor: Colors.red));
                         }
                       },
                     ),
@@ -252,7 +268,7 @@ class AboutPage extends StatelessWidget {
             const ListTile(
               leading: Icon(Icons.developer_mode, color: Colors.grey),
               title: Text('Nhà phát triển'),
-              subtitle: Text('Nhóm Đồ Án / ĐH HUTECH'),
+              subtitle: Text('Mai Đức Hoàng Nam / ĐH HUTECH'),
             ),
           ],
         ),

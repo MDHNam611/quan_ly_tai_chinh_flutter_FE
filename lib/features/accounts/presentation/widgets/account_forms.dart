@@ -29,7 +29,8 @@ class _AccountActionFormState extends State<AccountActionForm> {
     super.initState();
     _nameController = TextEditingController(text: widget.account?.name ?? '');
     _descController = TextEditingController(text: widget.account?.description ?? '');
-    _selectedIcon = widget.account?.icon ?? 'wallet';
+    // ĐÃ CẬP NHẬT: Chọn icon mặc định là 'account_balance_wallet' để khớp với kho Ví
+    _selectedIcon = widget.account?.icon ?? 'account_balance_wallet';
   }
 
   void _save() {
@@ -76,6 +77,10 @@ class _AccountActionFormState extends State<AccountActionForm> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.account != null;
+    
+    // ĐÃ CẬP NHẬT: Chỉ lấy danh sách Icon thuộc nhóm 'Ví & Ngân hàng'
+    final Map<String, IconData> walletIcons = CategoryHelper.categorizedIcons['Ví & Ngân hàng'] ?? {};
+
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 24),
       child: Column(
@@ -92,11 +97,12 @@ class _AccountActionFormState extends State<AccountActionForm> {
           const SizedBox(height: 12),
           SizedBox(
             height: 150,
+            // ĐÃ CẬP NHẬT: Render GridView dựa trên walletIcons thay vì CategoryHelper.icons
             child: GridView.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6, crossAxisSpacing: 8, mainAxisSpacing: 8),
-              itemCount: CategoryHelper.icons.length,
+              itemCount: walletIcons.length,
               itemBuilder: (context, index) {
-                final iconKey = CategoryHelper.icons.keys.elementAt(index);
+                final iconKey = walletIcons.keys.elementAt(index);
                 final isSelected = _selectedIcon == iconKey;
                 return GestureDetector(
                   onTap: () => setState(() => _selectedIcon = iconKey),

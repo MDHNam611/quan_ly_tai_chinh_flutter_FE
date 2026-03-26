@@ -9,8 +9,10 @@ import '../../../../injection_container.dart' as di; // Import GetIt
 import '../../../transactions/presentation/state/transaction_cubit.dart'; // Import Cubit giao dịch
 import '../../../transactions/presentation/pages/transaction_page.dart'; // Import Form
 import '/features/accounts/presentation/widgets/account_forms.dart';
-// ĐÃ THÊM: Import thư viện Custom AppBar dùng chung
 import 'package:do_an_quan_ly_tai_chinh/core/widgets/custom_app_bar.dart';
+
+// 👉 ĐÃ THÊM: Import TransactionSearchModal để lấy định nghĩa TransactionFilter
+import '../../../transactions/presentation/widgets/transaction_search_modal.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -55,12 +57,27 @@ class AccountPage extends StatelessWidget {
                   );
                 },
               ),
+              // ========================================================
+              // 👉 ĐÃ SỬA: CHỨC NĂNG XEM GIAO DỊCH
+              // ========================================================
               ListTile(
                 leading: const Icon(Icons.list_alt, color: Colors.purple),
                 title: const Text('Xem giao dịch'),
                 onTap: () {
-                  Navigator.pop(context);
-                  // TODO: Yêu cầu 5: Mở trang Giao dịch và filter. Sẽ làm ở tính năng Giao dịch.
+                  Navigator.pop(context); // Đóng menu BottomSheet
+                  
+                  // Tạo bộ lọc truyền tên Ví (hoặc ID tùy kiến trúc của bạn) vào mảng accounts
+                  // Nếu app bạn lọc theo tên Ví thì dùng [account.name], nếu lọc theo ID thì dùng [account.id]
+                  // Thường TransactionFilter lọc account theo ID.
+                  final filter = TransactionFilter(accountIds: [account.id]); 
+                  
+                  // Chuyển hướng sang trang Giao dịch
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TransactionPage(initialFilter: filter),
+                    ),
+                  );
                 },
               ),
               ListTile(
@@ -123,7 +140,6 @@ class AccountPage extends StatelessWidget {
     final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
 
     return Scaffold(
-      // ĐÃ SỬA: SỬ DỤNG CUSTOM APP BAR THAY VÌ KHỐI APPBAR CŨ
       appBar: CustomAppBar(
         backgroundColor: Colors.white,
         actions: [
@@ -170,7 +186,7 @@ class AccountPage extends StatelessWidget {
                         color: Colors.blue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(CategoryHelper.getIcon(acc.icon ?? 'wallet'), color: Colors.blue),
+                      child: Icon(CategoryHelper.getIcon(acc.icon ?? 'account_balance_wallet'), color: Colors.blue), // Đã update fallback icon
                     ),
                     title: Text(acc.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: acc.description != null ? Text(acc.description!) : null,
@@ -179,7 +195,7 @@ class AccountPage extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16, 
                         fontWeight: FontWeight.bold, 
-                        color: acc.balance < 0 ? Colors.red : Colors.green // Đổi màu đỏ nếu âm tiền
+                        color: acc.balance < 0 ? Colors.red : Colors.green 
                       ),
                     ),
                     onTap: () => _showAccountOptions(context, acc),

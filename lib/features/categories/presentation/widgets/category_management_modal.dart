@@ -141,7 +141,8 @@ class _CategoryActionFormState extends State<CategoryActionForm> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.category?.name ?? '');
-    _selectedIcon = widget.category?.icon ?? 'more_horiz';
+    // ĐÃ CẬP NHẬT: Xử lý icon mặc định
+    _selectedIcon = widget.category?.icon ?? CategoryHelper.categorizedIcons['Ăn uống']!.keys.first;
   }
 
   void _save() {
@@ -212,30 +213,47 @@ class _CategoryActionFormState extends State<CategoryActionForm> {
           const Text('Chọn Biểu tượng:', style: TextStyle(fontWeight: FontWeight.w500)),
           const SizedBox(height: 12),
           
-          // Bảng chọn Icon trực quan
+          // ĐÃ CẬP NHẬT: Bảng chọn Icon trực quan (Dùng ExpansionTile chia nhóm)
           SizedBox(
-            height: 150,
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 6,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-              ),
-              itemCount: CategoryHelper.icons.length,
-              itemBuilder: (context, index) {
-                final iconKey = CategoryHelper.icons.keys.elementAt(index);
-                final isSelected = _selectedIcon == iconKey;
-                
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedIcon = iconKey),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFFD6C4FF) : Colors.transparent,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: isSelected ? Colors.purple : Colors.grey.shade300),
+            height: 250, 
+            child: ListView.builder(
+              itemCount: CategoryHelper.categorizedIcons.keys.length,
+              itemBuilder: (context, catIndex) {
+                final categoryName = CategoryHelper.categorizedIcons.keys.elementAt(catIndex);
+                final iconsMap = CategoryHelper.categorizedIcons[categoryName]!;
+
+                return ExpansionTile(
+                  title: Text(categoryName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
+                  leading: const Icon(Icons.label_important_outline, color: Colors.blue),
+                  initiallyExpanded: (catIndex == 1), // Mở mặc định mục Ăn uống
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6, crossAxisSpacing: 8, mainAxisSpacing: 8),
+                        itemCount: iconsMap.length,
+                        itemBuilder: (context, iconIndex) {
+                          final iconKey = iconsMap.keys.elementAt(iconIndex);
+                          final isSelected = _selectedIcon == iconKey;
+                          
+                          return GestureDetector(
+                            onTap: () => setState(() => _selectedIcon = iconKey),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isSelected ? const Color(0xFFD6C4FF) : Colors.transparent,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: isSelected ? Colors.purple : Colors.grey.shade300, width: 2),
+                              ),
+                              child: Icon(iconsMap[iconKey], color: isSelected ? Colors.purple : Colors.grey, size: 30),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                    child: Icon(CategoryHelper.getIcon(iconKey), color: isSelected ? Colors.purple : Colors.grey),
-                  ),
+                    const SizedBox(height: 12),
+                  ],
                 );
               },
             ),

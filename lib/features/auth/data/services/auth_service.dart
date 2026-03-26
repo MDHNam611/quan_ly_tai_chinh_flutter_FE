@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:google_sign_in/google_sign_in.dart'; // Đã gỡ bí danh, dùng import chuẩn
+import 'package:google_sign_in/google_sign_in.dart'; 
 
 class AuthService {
   // LƯU Ý: Nếu dùng máy ảo Android Studio, hãy đổi 'localhost' thành '10.0.2.2'
@@ -58,11 +58,14 @@ class AuthService {
     return prefs.getString('jwt_token');
   }
 
-  // HÀM ĐĂNG XUẤT
+  // HÀM ĐĂNG XUẤT (ĐÃ THÊM LOGIC XÓA AVATAR)
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('jwt_token');
     await prefs.remove('user_name');
+    
+    // 👉 ĐÃ THÊM: Xóa link avatar khỏi bộ nhớ đệm để tránh bị "bóng ma"
+    await prefs.remove('user_avatar'); 
   }
 
   // HÀM ĐỒNG BỘ DỮ LIỆU LÊN MONGODB (PUSH)
@@ -129,7 +132,7 @@ class AuthService {
   }
 
   // ======================================================
-  // HÀM ĐĂNG NHẬP BẰNG GOOGLE (ĐÃ CẬP NHẬT CHUẨN V7.2.0)
+  // HÀM ĐĂNG NHẬP BẰNG GOOGLE (ĐÃ CẬP NHẬT LƯU ẢNH)
   // ======================================================
   Future<String?> loginWithGoogle() async {
     try {
@@ -165,6 +168,12 @@ class AuthService {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('jwt_token', data['token']);
         await prefs.setString('user_name', data['name']);
+        
+        // 👉 ĐÃ THÊM: Lưu link ảnh Google vào máy (nếu có)
+        if (googleUser.photoUrl != null) {
+          await prefs.setString('user_avatar', googleUser.photoUrl!);
+        }
+        
         return null; // Thành công
       } else {
         // Đăng xuất khỏi Google nếu backend từ chối

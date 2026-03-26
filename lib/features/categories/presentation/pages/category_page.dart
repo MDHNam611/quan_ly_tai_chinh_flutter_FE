@@ -13,11 +13,8 @@ import 'package:do_an_quan_ly_tai_chinh/features/transactions/data/models/transa
 import 'package:do_an_quan_ly_tai_chinh/features/categories/presentation/pages/category_detail_edit_screen.dart';
 import 'package:do_an_quan_ly_tai_chinh/features/transactions/presentation/pages/transaction_page.dart';
 
-// ĐÃ THÊM: Import thư viện Custom AppBar dùng chung
 import 'package:do_an_quan_ly_tai_chinh/core/widgets/custom_app_bar.dart';
-// ĐÃ THÊM: Import thư viện chứa TransactionFilter để sửa lỗi
 import 'package:do_an_quan_ly_tai_chinh/features/transactions/presentation/widgets/transaction_search_modal.dart';
-
 
 class CategoryPage extends StatefulWidget {
   const CategoryPage({super.key});
@@ -430,7 +427,7 @@ class _CategoryPageState extends State<CategoryPage> {
 }
 
 // =========================================================
-// FORM THÊM MỚI DANH MỤC
+// WIDGET THÊM DANH MỤC TRONG CATEGORY PAGE (ĐÃ CẬP NHẬT UI CHỌN ICON)
 // =========================================================
 class AddCategoryForm extends StatefulWidget {
   final String type; 
@@ -443,14 +440,14 @@ class AddCategoryForm extends StatefulWidget {
 
 class _AddCategoryFormState extends State<AddCategoryForm> {
   final _nameController = TextEditingController();
-  String _selectedIcon = 'category';
+  late String _selectedIcon;
 
-  final List<String> _availableIcons = [
-    'restaurant', 'shopping_cart', 'local_gas_station', 'directions_bus',
-    'home', 'build', 'health_and_safety', 'wifi', 'shopping_bag',
-    'school', 'sports_esports', 'pets', 'card_giftcard', 'wallet',
-    'money', 'savings', 'account_balance', 'category', 'more_horiz'
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Khởi tạo icon mặc định là icon đầu tiên của nhóm Ăn uống
+    _selectedIcon = CategoryHelper.categorizedIcons['Ăn uống']!.keys.first;
+  }
 
   void _save() {
     final name = _nameController.text.trim();
@@ -483,19 +480,51 @@ class _AddCategoryFormState extends State<AddCategoryForm> {
           
           const Text('Chọn biểu tượng', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 12, runSpacing: 12,
-            children: _availableIcons.map((iconName) {
-              final isSelected = _selectedIcon == iconName;
-              return InkWell(
-                onTap: () => setState(() => _selectedIcon = iconName),
-                child: CircleAvatar(
-                  radius: 22,
-                  backgroundColor: isSelected ? Colors.blue.shade100 : Colors.grey.shade100,
-                  child: Icon(CategoryHelper.getIcon(iconName), color: isSelected ? Colors.blue : Colors.black54),
-                ),
-              );
-            }).toList(),
+          
+          // ĐÃ CẬP NHẬT: Giao diện List cuộn chứa các ExpansionTile chia nhóm
+          SizedBox(
+            height: 250, 
+            child: ListView.builder(
+              itemCount: CategoryHelper.categorizedIcons.keys.length,
+              itemBuilder: (context, catIndex) {
+                final categoryName = CategoryHelper.categorizedIcons.keys.elementAt(catIndex);
+                final iconsMap = CategoryHelper.categorizedIcons[categoryName]!;
+
+                return ExpansionTile(
+                  title: Text(categoryName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
+                  leading: const Icon(Icons.label_important_outline, color: Colors.blue),
+                  initiallyExpanded: (catIndex == 1), // Mở mặc định mục Ăn uống
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6, crossAxisSpacing: 8, mainAxisSpacing: 8),
+                        itemCount: iconsMap.length,
+                        itemBuilder: (context, iconIndex) {
+                          final iconKey = iconsMap.keys.elementAt(iconIndex);
+                          final isSelected = _selectedIcon == iconKey;
+                          
+                          return GestureDetector(
+                            onTap: () => setState(() => _selectedIcon = iconKey),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isSelected ? const Color(0xFFD6C4FF) : Colors.transparent,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: isSelected ? Colors.purple : Colors.grey.shade300, width: 2),
+                              ),
+                              child: Icon(iconsMap[iconKey], color: isSelected ? Colors.purple : Colors.grey, size: 30),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                );
+              },
+            ),
           ),
           const SizedBox(height: 24),
           

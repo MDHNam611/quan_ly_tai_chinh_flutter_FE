@@ -20,18 +20,10 @@ class _CategoryDetailEditScreenState extends State<CategoryDetailEditScreen> {
   late String _selectedIcon;
   late String _selectedColor;
 
-  // DANH SÁCH MÀU VÀ ICON TẠO SẴN CHO UI (Khắc phục lỗi không tìm thấy iconMap/colorMap)
-  final List<String> _availableIcons = [
-    'restaurant', 'shopping_cart', 'local_gas_station', 'directions_bus',
-    'home', 'build', 'health_and_safety', 'wifi', 'shopping_bag',
-    'school', 'sports_esports', 'pets', 'card_giftcard', 'wallet',
-    'money', 'savings', 'account_balance', 'category', 'more_horiz'
-  ];
-
+  // ĐÃ SỬA: Danh sách các tên màu tương thích với CategoryHelper.getColor()
   final List<String> _availableColors = [
-    '#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5',
-    '#2196F3', '#00BCD4', '#009688', '#4CAF50', '#8BC34A',
-    '#FFC107', '#FF9800', '#FF5722', '#795548', '#9E9E9E', '#607D8B'
+    'red', 'blue', 'green', 'orange', 'purple', 
+    'teal', 'pink', 'indigo', 'amber', 'cyan', 'brown', 'grey'
   ];
 
   @override
@@ -79,7 +71,6 @@ class _CategoryDetailEditScreenState extends State<CategoryDetailEditScreen> {
             onPressed: () async {
               Navigator.pop(ctx); 
               
-              // ĐÃ SỬA: Xóa dấu ! thừa thãi ở widget.category.id
               await context.read<CategoryCubit>().deleteCategory(widget.category.id);
               
               if (context.mounted) {
@@ -105,56 +96,110 @@ class _CategoryDetailEditScreenState extends State<CategoryDetailEditScreen> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Chọn biểu tượng', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12, runSpacing: 12,
-                      // ĐÃ SỬA: Dùng list local _availableIcons
-                      children: _availableIcons.map((iconName) {
-                        final isSelected = _selectedIcon == iconName;
-                        return InkWell(
-                          onTap: () {
-                            setModalState(() => _selectedIcon = iconName);
-                            setState(() => _selectedIcon = iconName); 
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.8, // Chiếm 80% màn hình để dễ cuộn
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Tùy chỉnh biểu tượng', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                      const SizedBox(height: 16),
+                      
+                      // CHỌN MÀU SẮC
+                      const Text('Chọn màu sắc:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Colors.black54)),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 12, runSpacing: 12,
+                        children: _availableColors.map((colorName) {
+                          final isSelected = _selectedColor == colorName;
+                          final colorValue = CategoryHelper.getColor(colorName);
+                          return InkWell(
+                            onTap: () {
+                              setModalState(() => _selectedColor = colorName);
+                              setState(() => _selectedColor = colorName);
+                            },
+                            child: CircleAvatar(
+                              radius: 20,
+                              backgroundColor: colorValue,
+                              child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      const Divider(),
+                      const SizedBox(height: 16),
+                      
+                      // CHỌN BIỂU TƯỢNG (DÙNG EXPANSION TILE PHÂN NHÓM)
+                      const Text('Chọn biểu tượng:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Colors.black54)),
+                      const SizedBox(height: 12),
+                      
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: CategoryHelper.categorizedIcons.keys.length,
+                          itemBuilder: (context, catIndex) {
+                            final categoryName = CategoryHelper.categorizedIcons.keys.elementAt(catIndex);
+                            final iconsMap = CategoryHelper.categorizedIcons[categoryName]!;
+
+                            // Kiểm tra xem icon hiện tại có nằm trong nhóm này không để tự động mở
+                            final bool hasSelectedIcon = iconsMap.containsKey(_selectedIcon);
+
+                            return ExpansionTile(
+                              title: Text(categoryName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
+                              leading: const Icon(Icons.label_important_outline, color: Colors.blue),
+                              initiallyExpanded: hasSelectedIcon, 
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  child: GridView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6, crossAxisSpacing: 8, mainAxisSpacing: 8),
+                                    itemCount: iconsMap.length,
+                                    itemBuilder: (context, iconIndex) {
+                                      final iconKey = iconsMap.keys.elementAt(iconIndex);
+                                      final isSelected = _selectedIcon == iconKey;
+                                      
+                                      return GestureDetector(
+                                        onTap: () {
+                                          setModalState(() => _selectedIcon = iconKey);
+                                          setState(() => _selectedIcon = iconKey);
+                                        },
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: isSelected ? CategoryHelper.getColor(_selectedColor).withOpacity(0.2) : Colors.transparent,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: isSelected ? CategoryHelper.getColor(_selectedColor) : Colors.grey.shade300, width: 2),
+                                          ),
+                                          child: Icon(iconsMap[iconKey], color: isSelected ? CategoryHelper.getColor(_selectedColor) : Colors.grey, size: 30),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                            );
                           },
-                          child: CircleAvatar(
-                            radius: 24,
-                            backgroundColor: isSelected ? Colors.blue.shade100 : Colors.grey.shade100,
-                            child: Icon(CategoryHelper.getIcon(iconName), color: isSelected ? Colors.blue : Colors.black54),
+                        ),
+                      ),
+                      
+                      // NÚT XONG
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: CategoryHelper.getColor(_selectedColor), 
+                            padding: const EdgeInsets.symmetric(vertical: 14)
                           ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text('Chọn màu sắc', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12, runSpacing: 12,
-                      // ĐÃ SỬA: Dùng list local _availableColors
-                      children: _availableColors.map((colorName) {
-                        final isSelected = _selectedColor == colorName;
-                        final colorValue = CategoryHelper.getColor(colorName);
-                        return InkWell(
-                          onTap: () {
-                            setModalState(() => _selectedColor = colorName);
-                            setState(() => _selectedColor = colorName);
-                          },
-                          child: CircleAvatar(
-                            radius: 20,
-                            backgroundColor: colorValue,
-                            child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+                          child: const Text('Xong', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                      )
+                    ],
+                  ),
                 ),
               ),
             );
