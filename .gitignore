@@ -1,52 +1,79 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
-
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# =========================================================================
+# 🚀 FLUTTER & DART CORE
+# =========================================================================
 .dart_tool/
-.flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
 /build/
 /coverage/
+*.dart_tool
+*.dart.js
+*.js.map
 
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-.dart_tool/
-.packages
-.pub/
-build/
+# =========================================================================
+# 🔐 BẢO MẬT & KEYS (CỰC KỲ QUAN TRỌNG - KHÔNG PUSH LÊN GIT)
+# =========================================================================
+.env
+*.env
+# Các file chứa chữ ký để đẩy app lên Google Play
+*.jks
+*.keystore
+key.properties
+# Các cấu hình Firebase (Nên giấu đi nếu repo public)
 android/app/google-services.json
-ios/Flutter/Generated.xcconfig
+ios/GoogleService-Info.plist
+macos/Runner/GoogleService-Info.plist
+
+# =========================================================================
+# 🍎 iOS & macOS
+# =========================================================================
+**/ios/Flutter/.last_build_id
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Pods/
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/ios/.symlinks/
+**/ios/Runner.xcworkspace/xcuserdata/
+**/ios/Runner.xcodeproj/project.xcworkspace/xcuserdata/
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/macos/Flutter/ephemeral/
+
+# =========================================================================
+# 🤖 ANDROID
+# =========================================================================
+**/android/.gradle
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+
+# =========================================================================
+# 🛠 CÔNG CỤ & HỆ ĐIỀU HÀNH
+# =========================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+*.swp
+*.pyc
+*.class
+*.log
