@@ -2,22 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-import 'package:do_an_quan_ly_tai_chinh/core/helpers/icon_helper.dart'; // Import bộ chuyển đổi Icon
+import 'package:do_an_quan_ly_tai_chinh/core/helpers/icon_helper.dart'; 
 import '../state/account_cubit.dart';
 import '../../data/models/account_model.dart';
-import '../../../../injection_container.dart' as di; // Import GetIt
-import '../../../transactions/presentation/state/transaction_cubit.dart'; // Import Cubit giao dịch
-import '../../../transactions/presentation/pages/transaction_page.dart'; // Import Form
+import '../../../../injection_container.dart' as di; 
+import '../../../transactions/presentation/state/transaction_cubit.dart'; 
+import '../../../transactions/presentation/pages/transaction_page.dart'; 
 import '/features/accounts/presentation/widgets/account_forms.dart';
 import 'package:do_an_quan_ly_tai_chinh/core/widgets/custom_app_bar.dart';
-
-// 👉 ĐÃ THÊM: Import TransactionSearchModal để lấy định nghĩa TransactionFilter
 import '../../../transactions/presentation/widgets/transaction_search_modal.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
 
-  // Hiển thị Menu 6 chức năng khi nhấn vào 1 tài khoản
   void _showAccountOptions(BuildContext context, AccountModel account) {
     showModalBottomSheet(
       context: context,
@@ -41,7 +38,7 @@ class AccountPage extends StatelessWidget {
                     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
                     builder: (ctx) => BlocProvider.value(
                       value: context.read<AccountCubit>(),
-                      child: AccountActionForm(account: account), // Truyền account vào là Chỉnh sửa
+                      child: AccountActionForm(account: account), 
                     ),
                   );
                 },
@@ -57,21 +54,12 @@ class AccountPage extends StatelessWidget {
                   );
                 },
               ),
-              // ========================================================
-              // 👉 ĐÃ SỬA: CHỨC NĂNG XEM GIAO DỊCH
-              // ========================================================
               ListTile(
                 leading: const Icon(Icons.list_alt, color: Colors.purple),
                 title: const Text('Xem giao dịch'),
                 onTap: () {
-                  Navigator.pop(context); // Đóng menu BottomSheet
-                  
-                  // Tạo bộ lọc truyền tên Ví (hoặc ID tùy kiến trúc của bạn) vào mảng accounts
-                  // Nếu app bạn lọc theo tên Ví thì dùng [account.name], nếu lọc theo ID thì dùng [account.id]
-                  // Thường TransactionFilter lọc account theo ID.
+                  Navigator.pop(context); 
                   final filter = TransactionFilter(accountIds: [account.id]); 
-                  
-                  // Chuyển hướng sang trang Giao dịch
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -89,10 +77,11 @@ class AccountPage extends StatelessWidget {
                     context: context, isScrollControlled: true,
                     builder: (ctx) => BlocProvider.value(
                       value: di.sl<TransactionCubit>(),
-                      child: AddTransactionForm(initialAccountId: account.id, initialType: 'income', initialCategory: 'Tiền lương'),
+                      // ĐÃ THÊM isFixed: true để khóa nút chọn Thu/Chi
+                      child: AddTransactionForm(initialAccountId: account.id, initialType: 'income', initialCategory: 'Tiền lương', isFixed: true),
                     ),
                   );
-                  if (context.mounted) context.read<AccountCubit>().loadAccounts(); // Update số dư
+                  if (context.mounted) context.read<AccountCubit>().loadAccounts(); 
                 },
               ),
               ListTile(
@@ -104,10 +93,11 @@ class AccountPage extends StatelessWidget {
                     context: context, isScrollControlled: true,
                     builder: (ctx) => BlocProvider.value(
                       value: di.sl<TransactionCubit>(),
-                      child: AddTransactionForm(initialAccountId: account.id, initialType: 'expense'),
+                      // ĐÃ THÊM isFixed: true để khóa nút chọn Thu/Chi
+                      child: AddTransactionForm(initialAccountId: account.id, initialType: 'expense', isFixed: true),
                     ),
                   );
-                  if (context.mounted) context.read<AccountCubit>().loadAccounts(); // Update số dư
+                  if (context.mounted) context.read<AccountCubit>().loadAccounts(); 
                 },
               ),
               ListTile(
@@ -120,12 +110,12 @@ class AccountPage extends StatelessWidget {
                     builder: (ctx) => MultiBlocProvider(
                       providers: [
                         BlocProvider.value(value: di.sl<TransactionCubit>()),
-                        BlocProvider.value(value: context.read<AccountCubit>()), // Chuyền AccountCubit để lấy DS ví đích
+                        BlocProvider.value(value: context.read<AccountCubit>()), 
                       ],
                       child: TransferAccountForm(sourceAccount: account),
                     ),
                   );
-                  if (context.mounted) context.read<AccountCubit>().loadAccounts(); // Update số dư 2 ví
+                  if (context.mounted) context.read<AccountCubit>().loadAccounts(); 
                 },
               ),
             ],
@@ -146,14 +136,13 @@ class AccountPage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.add, color: Colors.black87, size: 28), 
             onPressed: () {
-              // MỞ FORM THÊM MỚI TÀI KHOẢN
               showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
                 builder: (ctx) => BlocProvider.value(
                   value: context.read<AccountCubit>(),
-                  child: const AccountActionForm(account: null), // account = null là Thêm mới
+                  child: const AccountActionForm(account: null), 
                 ),
               );
             },
@@ -186,7 +175,7 @@ class AccountPage extends StatelessWidget {
                         color: Colors.blue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(CategoryHelper.getIcon(acc.icon ?? 'account_balance_wallet'), color: Colors.blue), // Đã update fallback icon
+                      child: Icon(CategoryHelper.getIcon(acc.icon ?? 'account_balance_wallet'), color: Colors.blue), 
                     ),
                     title: Text(acc.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: acc.description != null ? Text(acc.description!) : null,

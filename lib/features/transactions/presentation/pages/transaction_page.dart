@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // ĐÃ THÊM: Thư viện quản lý input formatters
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:grouped_list/grouped_list.dart';
 import 'package:intl/intl.dart';
@@ -15,8 +16,6 @@ import 'package:do_an_quan_ly_tai_chinh/features/categories/data/models/category
 import 'package:do_an_quan_ly_tai_chinh/features/transactions/presentation/widgets/transaction_search_modal.dart';
 import 'package:do_an_quan_ly_tai_chinh/features/transactions/presentation/widgets/transaction_action_modal.dart';
 import 'package:do_an_quan_ly_tai_chinh/features/dashboard/presentation/widgets/period_selection_modal.dart';
-
-// ĐÃ THÊM: Import CustomAppBar dùng chung
 import 'package:do_an_quan_ly_tai_chinh/core/widgets/custom_app_bar.dart';
 
 class TransactionPage extends StatefulWidget {
@@ -330,7 +329,6 @@ class _TransactionPageState extends State<TransactionPage> {
     final currencyFormatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
     final isArrowDisabled = _currentPeriodType == PeriodType.all || _currentPeriodType == PeriodType.custom;
 
-    // Nút TÌM KIẾM dùng chung cho cả 2 loại AppBar
     final Widget searchButton = IconButton(
       icon: Icon(Icons.search, color: _currentFilter.isEmpty ? Colors.black87 : Colors.blue),
       onPressed: () async {
@@ -350,10 +348,7 @@ class _TransactionPageState extends State<TransactionPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      
-      // XỬ LÝ APPBAR PHÂN NHÁNH 3 LỚP ĐỘNG
       appBar: _isMultiSelectMode 
-        // 1. Chế độ chọn nhiều
         ? AppBar(
             backgroundColor: Colors.blue.shade50,
             leading: IconButton(icon: const Icon(Icons.close, color: Colors.black87), onPressed: _clearSelection),
@@ -377,7 +372,6 @@ class _TransactionPageState extends State<TransactionPage> {
             ],
           )
         : (Navigator.canPop(context) 
-            // 2. Chế độ trang con (Mở từ Danh mục) -> Có nút Quay lại
             ? AppBar(
                 backgroundColor: Colors.white,
                 elevation: 0,
@@ -399,7 +393,6 @@ class _TransactionPageState extends State<TransactionPage> {
                 centerTitle: true,
                 actions: [searchButton],
               )
-            // 3. Chế độ trang Tab chính -> CustomAppBar (Có menu Avatar)
             : CustomAppBar(
                 backgroundColor: Colors.white,
                 actions: [searchButton],
@@ -467,7 +460,6 @@ class _TransactionPageState extends State<TransactionPage> {
             const Divider(thickness: 1, height: 1),
           ],
 
-          // DANH SÁCH GIAO DỊCH
           Expanded(
             child: BlocBuilder<TransactionCubit, TransactionState>(
               builder: (context, state) {
@@ -621,8 +613,9 @@ class AddTransactionForm extends StatefulWidget {
   final String? initialAccountId;
   final String? initialType;
   final String? initialCategory;
+  final bool isFixed; // ĐÃ THÊM: Biến khóa Nạp/Rút
 
-  const AddTransactionForm({super.key, this.initialAccountId, this.initialType, this.initialCategory});
+  const AddTransactionForm({super.key, this.initialAccountId, this.initialType, this.initialCategory, this.isFixed = false});
 
   @override
   State<AddTransactionForm> createState() => _AddTransactionFormState();
@@ -693,12 +686,28 @@ class _AddTransactionFormState extends State<AddTransactionForm> {
         children: [
           const Text('Thêm giao dịch', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(child: RadioListTile<String>(title: const Text('Chi'), value: 'expense', groupValue: _type, onChanged: (val) => setState(() { _type = val!; _category = null; }))),
-              Expanded(child: RadioListTile<String>(title: const Text('Thu'), value: 'income', groupValue: _type, onChanged: (val) => setState(() { _type = val!; _category = null; }))),
-            ],
-          ),
+          
+          // ĐÃ SỬA: LOGIC ẨN/HIỆN NÚT THU CHI
+          if (widget.isFixed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                _type == 'income' ? 'Loại: Thu nhập (Nạp tiền)' : 'Loại: Chi phí (Rút tiền)',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: _type == 'income' ? Colors.green : Colors.red,
+                ),
+              ),
+            )
+          else
+            Row(
+              children: [
+                Expanded(child: RadioListTile<String>(title: const Text('Chi'), value: 'expense', groupValue: _type, onChanged: (val) => setState(() { _type = val!; _category = null; }))),
+                Expanded(child: RadioListTile<String>(title: const Text('Thu'), value: 'income', groupValue: _type, onChanged: (val) => setState(() { _type = val!; _category = null; }))),
+              ],
+            ),
+            
           if (accounts.isNotEmpty)
             DropdownButtonFormField<String>(
               value: _accountId,
@@ -717,7 +726,19 @@ class _AddTransactionFormState extends State<AddTransactionForm> {
             )
           else const Text('Vui lòng tạo danh mục trước', style: TextStyle(color: Colors.red)),
           const SizedBox(height: 12),
-          TextField(controller: _amountController, keyboardType: TextInputType.number, autofocus: true, decoration: const InputDecoration(labelText: 'Số tiền', prefixIcon: Icon(Icons.attach_money), border: OutlineInputBorder())),
+          
+          // ĐÃ SỬA: CHẶN 13 KÝ TỰ SỐ TIỀN Ở ĐÂY
+          TextField(
+            controller: _amountController, 
+            keyboardType: TextInputType.number, 
+            autofocus: true, 
+            decoration: const InputDecoration(labelText: 'Số tiền', prefixIcon: Icon(Icons.attach_money), border: OutlineInputBorder()),
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(13),
+            ],
+          ),
+          
           const SizedBox(height: 12),
           TextField(controller: _noteController, decoration: const InputDecoration(labelText: 'Ghi chú', prefixIcon: Icon(Icons.note), border: OutlineInputBorder())),
           const SizedBox(height: 16),

@@ -6,7 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 class AuthService {
   // LƯU Ý: Nếu dùng máy ảo Android Studio, hãy đổi 'localhost' thành '10.0.2.2'
   // Nếu dùng máy thật, thay bằng IP IPv4 của máy tính bạn (VD: '192.168.1.5')
-  final String baseUrl = 'http://10.0.2.2:3000/api/auth';
+  final String baseUrl = 'https://api-quan-ly-tai-chinh.onrender.com/api/auth';
 
   // HÀM ĐĂNG KÝ
   Future<String?> register(String name, String email, String password) async {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // ĐÃ THÊM THƯ VIỆN BẢO MẬT INPUT
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 
@@ -29,7 +30,6 @@ class _AccountActionFormState extends State<AccountActionForm> {
     super.initState();
     _nameController = TextEditingController(text: widget.account?.name ?? '');
     _descController = TextEditingController(text: widget.account?.description ?? '');
-    // ĐÃ CẬP NHẬT: Chọn icon mặc định là 'account_balance_wallet' để khớp với kho Ví
     _selectedIcon = widget.account?.icon ?? 'account_balance_wallet';
   }
 
@@ -77,8 +77,6 @@ class _AccountActionFormState extends State<AccountActionForm> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.account != null;
-    
-    // ĐÃ CẬP NHẬT: Chỉ lấy danh sách Icon thuộc nhóm 'Ví & Ngân hàng'
     final Map<String, IconData> walletIcons = CategoryHelper.categorizedIcons['Ví & Ngân hàng'] ?? {};
 
     return Padding(
@@ -97,7 +95,6 @@ class _AccountActionFormState extends State<AccountActionForm> {
           const SizedBox(height: 12),
           SizedBox(
             height: 150,
-            // ĐÃ CẬP NHẬT: Render GridView dựa trên walletIcons thay vì CategoryHelper.icons
             child: GridView.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6, crossAxisSpacing: 8, mainAxisSpacing: 8),
               itemCount: walletIcons.length,
@@ -156,6 +153,11 @@ class _AdjustBalanceFormState extends State<AdjustBalanceForm> {
           TextField(
             controller: _balanceController, keyboardType: TextInputType.number, autofocus: true,
             decoration: InputDecoration(labelText: 'Số dư thực tế', hintText: 'Hiện tại: ${widget.account.balance}', border: const OutlineInputBorder(), prefixIcon: const Icon(Icons.attach_money)),
+            // ĐÃ THÊM: Chặn không cho nhập chữ và khóa cứng 13 số
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(13),
+            ],
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -226,7 +228,15 @@ class _TransferAccountFormState extends State<TransferAccountForm> {
             decoration: const InputDecoration(labelText: 'Chuyển đến ví', border: OutlineInputBorder()),
           ),
           const SizedBox(height: 12),
-          TextField(controller: _amountController, keyboardType: TextInputType.number, autofocus: true, decoration: const InputDecoration(labelText: 'Số tiền', prefixIcon: Icon(Icons.attach_money), border: OutlineInputBorder())),
+          TextField(
+            controller: _amountController, keyboardType: TextInputType.number, autofocus: true, 
+            decoration: const InputDecoration(labelText: 'Số tiền', prefixIcon: Icon(Icons.attach_money), border: OutlineInputBorder()),
+            // ĐÃ THÊM: Chặn không cho nhập chữ và khóa cứng 13 số
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(13),
+            ],
+          ),
           const SizedBox(height: 12),
           TextField(controller: _noteController, decoration: const InputDecoration(labelText: 'Ghi chú', prefixIcon: Icon(Icons.note), border: OutlineInputBorder())),
           const SizedBox(height: 16),
